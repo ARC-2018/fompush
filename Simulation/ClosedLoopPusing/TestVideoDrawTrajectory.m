@@ -8,7 +8,7 @@ for i = 1:length(files)
 end
 offsets_in_seconds = [-2.3 -3.5 -3.1 -3.3 -3 -3.5]; %TODO: Add a vector with all the offsets
 run('Setup.m');
-% run('TestMatlabCalibration.m');
+run('TestMatlabCalibration.m');
 for i = 1:1
 % for i = 1:length(Filenames)
     experiment_name = Filenames{i}

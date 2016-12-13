@@ -4,11 +4,11 @@ function [new_im] = DrawLineBetweenTwoPoints(trajectory, im, color)
 if nargin < 4
     color = [0 0 0];
 end
-first = trajectory(1,1:2);
-last = trajectory(2,1:2);
-displacement_vector = last - first;
-distance = sqrt(displacement_vector * displacement_vector.');
-number_of_waypoints = ceil(distance);
+first = trajectory(1,1:2)
+last = trajectory(2,1:2)
+displacement_vector = last - first
+distance = sqrt(displacement_vector * displacement_vector.')
+number_of_waypoints = ceil(distance)
 step_displacement = displacement_vector / number_of_waypoints;
 new_im = im;
 for i = 0:number_of_waypoints

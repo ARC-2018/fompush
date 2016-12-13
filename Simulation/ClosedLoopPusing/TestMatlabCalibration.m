@@ -38,12 +38,14 @@ im = undistortImage(imOrig, cameraParams); % The image is undistorted
 translationVector = translationVector.'; % My code used vertical vectors
 M = cameraParams.IntrinsicMatrix.'; % Matlab returns a transposed M
 %% Trajectory transformation
-trajectory = zeros(N, 3);
-trajectory(:,1) = x.'; % The trajectory points are initialized in the
-trajectory(:,2) = y.'; % format used in my functions
-trajectory(:,3) = ones(N,1); 
+trajectory = zeros(size(worldPoints,1), 3);
+trajectory(:,1:2) = worldPoints; % The trajectory points are initialized in the
+% trajectory(:,2) = y.'; % format used in my functions
+trajectory(:,3) = ones(size(worldPoints,1),1);
+new_theta = 0.1;
+rotationMatrix = [cos(new_theta), -sin(new_theta) 0; sin(new_theta), cos(new_theta) 0; 0 0 1] * rotationMatrix;
 planarR = rotationMatrix(:,1:2); % Everything is on the same plane so we can set Z = 0
 % The trajectory in pixels is obtained, drawn and displayed
 camera_trajectory = WorldToCameraTrajectory(trajectory, M, planarR, translationVector);
-new_I = DrawTrajectoryOnImage(camera_trajectory(:,1).', camera_trajectory(:,2).', im);
+new_I = DrawTrajectoryOnImage(camera_trajectory, im, [255 0 0]);
 figure; imshow(new_I);
