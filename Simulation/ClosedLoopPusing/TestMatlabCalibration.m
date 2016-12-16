@@ -42,7 +42,7 @@ trajectory = zeros(size(worldPoints,1), 3);
 trajectory(:,1:2) = worldPoints; % The trajectory points are initialized in the
 % trajectory(:,2) = y.'; % format used in my functions
 trajectory(:,3) = ones(size(worldPoints,1),1);
-new_theta = 0.1;
+new_theta = 0.175;
 rotationMatrix = [cos(new_theta), -sin(new_theta) 0; sin(new_theta), cos(new_theta) 0; 0 0 1] * rotationMatrix;
 planarR = rotationMatrix(:,1:2); % Everything is on the same plane so we can set Z = 0
 % The trajectory in pixels is obtained, drawn and displayed
