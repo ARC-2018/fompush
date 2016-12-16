@@ -5,10 +5,10 @@ function [drawn_image] = DrawTrajectoryOnImage(trajectory, im, color)
 if nargin < 4
     color = [0 0 255];
 end
-x_waypoints = trajectory(:,2);
-y_waypoints = trajectory(:,1);
+% x_waypoints = trajectory(:,2);
+% y_waypoints = trajectory(:,1);
 drawn_image = im;     % creates a merged image
-N = length(x_waypoints);
+N = size(trajectory, 1);
 for i = 2:N
     line_trajectory = trajectory((i-1):i,:);
     drawn_image = DrawLineBetweenTwoPoints(line_trajectory, drawn_image, color);
