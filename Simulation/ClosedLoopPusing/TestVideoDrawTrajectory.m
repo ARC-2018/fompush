@@ -6,12 +6,12 @@ for i = 1:length(files)
     n = length(Filenames{i});
     Filenames{i} = Filenames{i}(1:(n-4)); %crop .MP4 out
 end
-offsets_in_seconds = [-2.3 -3.5 -3.1 -3.3 -3 -3.5]; %TODO: Add a vector with all the offsets
+offsets_in_seconds = [-3.3 -2.3 -3.5 -3.1 -3 -3.5]; %TODO: Add a vector with all the offsets
 run('Setup.m');
 run('TestMatlabCalibration.m');
-for i = 1:1
-% for i = 1:length(Filenames)
-    experiment_name = Filenames{i}
+% for i = 1:1
+for i = 1:length(Filenames)
+    experiment_name = Filenames{i};
     offset_in_seconds = offsets_in_seconds(i);
  
     Data1 = load(strcat('Results/Experiments_2016_11_23/Data/', experiment_name, '.mat'));
@@ -46,7 +46,7 @@ for i = 1:1
         straight_line_world_trajectory = RobotToWorldTrajectory(straight_line_trajectory, 323.4, 100.2);
         straight_line_camera_trajectory = WorldToCameraTrajectory(straight_line_world_trajectory, new_M, planarR, translationVector);
         im = DrawLineBetweenTwoPoints(straight_line_camera_trajectory, im);
-        new_video(k).cdata = DrawTrajectoryOnImage(camera_trajectory(:,1).', camera_trajectory(:,2).', im);
+        new_video(k).cdata = DrawTrajectoryOnImage(camera_trajectory, im);
         k = k+1;
         video_time = video_time + 1/frame_rate;
     end
