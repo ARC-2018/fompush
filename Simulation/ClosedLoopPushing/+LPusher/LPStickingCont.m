@@ -8,7 +8,7 @@ end
 
 methods
         
-function [LocalAin, Localbin, LocalAeq, Localbeq] = buildModeDepConstraints(obj, Opt, index)
+function [Ai, bi, Ae, be] = buildModeDepConstraints(obj, Opt, index)
     % Sticking Constraint
     numConstraints = 1;
     uIndex = 5;
@@ -16,7 +16,7 @@ function [LocalAin, Localbin, LocalAeq, Localbeq] = buildModeDepConstraints(obj,
     cLeft  = 0;
     Bright = 0;
     cRight = 0;
-    [LocalAin, Localbin, LocalAeq, Localbeq] = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
+    [Ai, bi, Ae, be] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
     clear Bleft cLeft Bright cRight
 end
 end

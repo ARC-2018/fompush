@@ -31,7 +31,7 @@ u_lower_bound = [-0.01;-0.01;1000;1000;1000];
 u_upper_bound = [1000;1000;1000;1000;1000];
 solvers{1} = FOMSolver(hybrid_states_map, Q_MPC, Q_MPC_final, R_MPC, u_lower_bound, u_upper_bound, x_lower_bound, x_upper_bound, h_opt, @Simulator2Controller, @Controller2Simulator, hybrid_modes, 1); % FOM with chameleon
 %% Solve MPC and Integrate
-tf = 1; % We only take one step of the Euler integration
+tf = 2; % We only take one step of the Euler integration
 u_thrust = 0.05;
 x_s = @(t)([u_thrust .* t 0.* t 0.* t u_thrust .* t - QSPusherSlider.a/2.0 0.* t 0.* t]');
 u_s = @(t)([u_thrust * ones(size(t)) 0.* t 0.* t]');

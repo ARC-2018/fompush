@@ -104,7 +104,8 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
         [x_c, u_c] = obj.hybrid_states_map(1).Simulator2Controller(x_star(t(step_index)), u_star(t(step_index)));
         hybrid_state_index = hybrid_mode(step_index);
         hybrid_state = obj.hybrid_states_map(hybrid_state_index); % Todo change if it slows everything down
-        [optimization_problem, H] = hybrid_state.buildConstraints(optimization_problem, step_index, x0, x_c, u_c, number_of_steps, obj.h_opt, obj.Q_MPC, obj.R_MPC, H);
+        [optimization_problem, H, Ai, bi, Ae, be] = hybrid_state.buildConstraints(optimization_problem, step_index, x0, x_c, u_c, number_of_steps, obj.h_opt, obj.Q_MPC, obj.R_MPC, H);
+        optimization_problem = optimization_problem.addLinearConstraints(Ai, bi, Ae, be);
     end
     optimization_problem = optimization_problem.addCost(H, [], []);
 end

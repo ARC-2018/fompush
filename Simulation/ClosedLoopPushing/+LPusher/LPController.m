@@ -23,38 +23,27 @@ methods
         obj.symbolicLinearize;
     end
     
-    function [Opt, H] = buildConstraints(obj, Opt, index, x0, x_c, u_c, num_steps, h, Q_MPC, R_MPC, H)
+    function [Opt, H, Ai, bi, Ae, be] = buildConstraints(obj, Opt, index, x0, x_c, u_c, num_steps, h, Q_MPC, R_MPC, H)
         %Add dynamic constraints
-        [Opt, H] = obj.buidDynConstraintsAndCost(Opt, index, x0 - x_c, num_steps, h, Q_MPC, R_MPC, H);
+        [Ai, bi, Ae, be, H] = obj.buidDynConstraintsAndCost(Opt, index, x0 - x_c, num_steps, h, Q_MPC, R_MPC, H);
         %Add mode independent constraints
-        %positive normal force(s)
-        numConstraints = 2;
-        uIndex = [1,2];
-        Bleft = [];
-        cLeft  = [];
-        Bright  = eye(2);
-        cRight = [];
-        Opt = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '<=', 'star', Opt);
-        %friction cone clamping of frictional force(s) Contact Point 1
-        numConstraints = 1;
-        uIndex = [1,3];
-        Bleft = [0 1];
-        cLeft  = [];
-        Bright  = [obj.nu_p 0];
-        cRight = [];
-        Opt = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '|<=|', 'star', Opt);
-        %friction cone clamping of frictional force(s) Contact Point 2
-        numConstraints = 1;
-        uIndex = [2,4];
-        Bleft = [0 1];
-        cLeft  = [];
-        Bright  = [obj.nu_p 0];
-        cRight = [];
-        Opt = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '|<=|', 'star', Opt);
-        Opt = obj.buildModeDepConstraints(Opt, index);
+        [A1,b1,A2,b2] = obj.buidModeIndep(Opt, index);
+        Ai = [Ai; A1];
+        bi = [bi; b1];
+        Ae = [Ae; A2];
+        be = [be; b2];
+        [A1,b1,A2,b2] = obj.buildModeDepConstraints(Opt, index);
+        Ai = [Ai; A1];
+        bi = [bi; b1];
+        Ae = [Ae; A2];
+        be = [be; b2];
     end
     
-    function [Opt, H] = buidDynConstraintsAndCost(obj, Opt, index, delta_x, num_steps, h, Q_MPC, R_MPC, H)
+    function [Ai, bi, Ae, be, H] = buidDynConstraintsAndCost(obj, Opt, index, delta_x, num_steps, h, Q_MPC, R_MPC, H)
+        Ai = [];
+        bi = [];
+        Ae = [];
+        be = [];
         numConstraints = obj.num_x;
         Aeq = zeros(numConstraints, Opt.nv);
         %Special case of initial conditions
@@ -66,10 +55,11 @@ methods
         Aeq(:,Opt.vars.x.i(1:obj.num_x,index))  = eye(obj.num_x);
         B_bar = h * obj.B_linear;
         Aeq(:,Opt.vars.u.i(1:obj.num_u,index))=  -B_bar;
-        Opt = Opt.addLinearConstraints([], [], Aeq, beq);
         if index == 1 % it has to be here to not add lines if unnecessary  
-            Opt.beq(1:4) = [A_bar*(delta_x)];
+            beq(1:4) = [A_bar*(delta_x)];
         end
+        Ae = [Ae; Aeq];
+        be = [be; beq];
         H(Opt.vars.x.i(1:length(Q_MPC), index), Opt.vars.x.i(1:length(Q_MPC), index)) = Q_MPC;
         H(Opt.vars.u.i(1:length(R_MPC), index), Opt.vars.u.i(1:length(R_MPC), index)) = R_MPC;
         %Final Cost
@@ -77,6 +67,49 @@ methods
             Q_final = 10 * dare(A_bar, B_bar, Q_MPC, R_MPC);
             H(Opt.vars.x.i(1:obj.num_x, index), Opt.vars.x.i(1:obj.num_x, index)) = Q_final;
         end
+    end
+    
+    function [Ai, bi, Ae, be] = buidModeIndep(obj, Opt, index)
+        Ai = [];
+        bi = [];
+        Ae = [];
+        be = [];
+        %positive normal force(s)
+        numConstraints = 2;
+        uIndex = [1,2];
+        Bleft = [];
+        cLeft  = [];
+        Bright  = eye(2);
+        cRight = [];
+        [A1,b1,A2,b2] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '<=', 'star', Opt);
+        Ai = [Ai; A1];
+        bi = [bi; b1];
+        Ae = [Ae; A2];
+        be = [be; b2];
+        %friction cone clamping of frictional force(s) Contact Point 1
+        numConstraints = 1;
+        uIndex = [1,3];
+        Bleft = [0 1];
+        cLeft  = [];
+        Bright  = [obj.nu_p 0];
+        cRight = [];
+        [A1,b1,A2,b2] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '|<=|', 'star', Opt);
+        Ai = [Ai; A1];
+        bi = [bi; b1];
+        Ae = [Ae; A2];
+        be = [be; b2];
+        %friction cone clamping of frictional force(s) Contact Point 2
+        numConstraints = 1;
+        uIndex = [2,4];
+        Bleft = [0 1];
+        cLeft  = [];
+        Bright  = [obj.nu_p 0];
+        cRight = [];
+        [A1,b1,A2,b2] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '|<=|', 'star', Opt); 
+        Ai = [Ai; A1];
+        bi = [bi; b1];
+        Ae = [Ae; A2];
+        be = [be; b2];
     end
     
     % Helper function Frank uses
@@ -137,6 +170,89 @@ methods
         %Set properties
         obj.A_linear = double(A);
         obj.B_linear = double(B);
+    end
+    
+    function [Ai, bi, Ae, be] = addPusherConstraints2(obj, Bleft, Bright, cLeft, cRight, numConstraints, I, index, equalFlag, nominalFlag, Opt)
+    %       if strcmp(flag,'leq')
+        Ai = [];
+        bi = [];
+        Ae = [];
+        be = [];
+        if isempty(Bleft)
+            Bleft = zeros(numConstraints);
+        end
+        if isempty(Bright)
+            Bright = zeros(numConstraints);
+        end
+        if isempty(cLeft)
+            cLeft = zeros(numConstraints,1);
+        end
+        if isempty(cRight)
+            cRight = zeros(numConstraints,1);
+        end
+        %% If lower than equal condition
+        if ~strcmp(equalFlag,'|<=|') || ~strcmp(equalFlag,'|>=|')
+            %Compute A
+            A = Bleft-Bright;
+            b = cRight-cLeft;
+            Amatrix = zeros(numConstraints, Opt.nv);
+            Amatrix(:,Opt.vars.u.i(I,index)) = A;
+            %Compute b
+            if strcmp(nominalFlag,'star')
+                u_star = [];
+                for lv3=1:length(I)
+                    u_star = [u_star;obj.uc_eq(I(lv3))];
+                end
+                bmatrix = - A*u_star;
+            else
+                bmatrix = b;
+            end
+            %Add constraint
+            epsilon=0.0001;
+            if strcmp(equalFlag,'<=')
+                Ai = [Ai; Amatrix];
+                bi = [bi; bmatrix];
+            elseif strcmp(equalFlag,'<')
+                Ai = [Ai; Amatrix];
+                bi = [bi; bmatrix-epsilon];
+            elseif strcmp(equalFlag,'>=')
+                Ai = [Ai; -Amatrix];
+                bi = [bi; -bmatrix];
+            elseif strcmp(equalFlag,'>')
+                Ai = [Ai; -Amatrix];
+                bi = [bi; -bmatrix-epsilon]; %TODO: Change
+            elseif strcmp(equalFlag,'==')
+                Ae = [Ae; Amatrix];
+                be = [be; bmatrix];
+            end
+        end
+        %% If lower than absolute value condition
+        if strcmp(equalFlag,'|<=|')
+            aSignVec = [-1,1];
+            eqSignVec = [1,-1];
+
+            for lv4=1:2
+                %Compute A
+                A = eqSignVec(lv4)*(Bleft+aSignVec(lv4)*Bright);
+                b = (cRight+aSignVec(lv4)*cLeft);
+                Ain = zeros(numConstraints, Opt.nv);
+                Ain(:,Opt.vars.u.i(I,index)) = A;
+                %Compute b
+                if strcmp(nominalFlag,'star')
+                    u_star = [];
+                    for lv3=1:length(I)
+                        u_star = [u_star;obj.uc_eq(I(lv3))];
+                    end
+                    bin = -A*u_star;
+
+                else
+                    bin = b;
+                    disp(bin);
+                end
+                Ai = [Ai; Ain];
+                bi = [bi; bin];
+            end
+        end
     end
 
     function Opt = addPusherConstraints(obj, Bleft, Bright, cLeft, cRight, numConstraints, I, index, equalFlag, nominalFlag, Opt)
