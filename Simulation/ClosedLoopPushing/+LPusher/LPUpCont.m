@@ -7,7 +7,7 @@ properties
 end
 
 methods
-function [Opt] = buildModeDepConstraints(obj, Opt, index)
+function [Ai, bi, Ae, be] = buildModeDepConstraints(obj, Opt, index)
     %Sliding left constraint
     numConstraints = 1;
     uIndex = [5];
@@ -15,7 +15,7 @@ function [Opt] = buildModeDepConstraints(obj, Opt, index)
     cLeft  = [0];
     Bright = [0];
     cRight = [0];
-    [Opt] = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '>', 'star', Opt);
+    [Ai, bi, Ae, be] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '>', 'star', Opt);
     clear Bleft cLeft Bright cRight
     %friction cone edge constraints
     numConstraints = 1;
@@ -24,7 +24,11 @@ function [Opt] = buildModeDepConstraints(obj, Opt, index)
     cLeft  = [0];
     Bright = [obj.nu_p 0];
     cRight = [0];
-    [Opt] = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
+    [A1,b1,A2,b2] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
+    Ai = [Ai; A1];
+    bi = [bi; b1];
+    Ae = [Ae; A2];
+    be = [be; b2];
     clear Bleft cLeft Bright cRight
     %friction cone edge constraints
     numConstraints = 1;
@@ -33,12 +37,12 @@ function [Opt] = buildModeDepConstraints(obj, Opt, index)
     cLeft  = [0];
     Bright = [obj.nu_p 0];
     cRight = [0];
-    [Opt] = obj.addPusherConstraints(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
+    [A1,b1,A2,b2] = obj.addPusherConstraints2(Bleft, Bright, cLeft, cRight, numConstraints, uIndex, index, '==', 'star', Opt);
+    Ai = [Ai; A1];
+    bi = [bi; b1];
+    Ae = [Ae; A2];
+    be = [be; b2];
     clear Bleft cLeft Bright cRight
-%     LocalAin = [Ain1; Ain2; Ain3];
-%     Localbin = [bin1; bin2; bin3];
-%     LocalAeq = [Aeq1; Aeq2; Aeq3];
-%     Localbeq = [beq1; beq2; beq3];
 end
         
 end
