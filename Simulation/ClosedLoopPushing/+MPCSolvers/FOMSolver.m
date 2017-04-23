@@ -41,7 +41,7 @@ function [f_values] = GetDataFirstStep(obj, current_t, u_star, current_x)
     end
 end
 
-function [u_c, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star, u_star, current_x_s)
+function [u_c, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_s_star, u_s_star, current_x_s)
     current_hybrid_modes = obj.hybrid_modes;
     if obj.has_chameleon
         current_hybrid_modes = [current_hybrid_modes; obj.chameleon_mode];
@@ -50,10 +50,9 @@ function [u_c, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star, u_s
     out_u_bar = cell(1, number_of_modes);
     out_x_bar = cell(1, number_of_modes);
     f_values = Inf * ones(1, number_of_modes);
-    [current_x_c, ~] = obj.simulator2controller(current_x_s);
     for hybrid_mode_index = 1:number_of_modes
         hybrid_mode = current_hybrid_modes(hybrid_mode_index, :);
-        optimization_problem = obj.GetOptimizationProblem(current_t, x_star, u_star, current_x_c, hybrid_mode);
+        optimization_problem = obj.GetOptimizationProblem(current_t, x_s_star, u_s_star, current_x_s, hybrid_mode);
         try
             options = optimoptions('quadprog','Display','none');
             [solved_optimization_problem, solvertime, f_values(hybrid_mode_index)] = optimization_problem.solve;
@@ -72,7 +71,7 @@ function [u_c, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star, u_s
         error('Could not find a solution for any optimization problem');
     end
     disp([sprintf('Mode %d. First state: ', mode_index), obj.hybrid_states_map(current_hybrid_modes(mode_index, 1)).name]);
-    [~, u_c_star] = obj.simulator2controller(x_star(current_t), u_star(current_t));
+    [~, u_c_star] = obj.simulator2controller(x_s_star(current_t), u_s_star(current_t));
     u_c = u_c_bar + u_c_star;
     if obj.has_chameleon
         obj.chameleon_mode = [current_hybrid_modes(mode_index, 2:end), current_hybrid_modes(mode_index, 1)];
@@ -81,13 +80,14 @@ end
 end
 methods
 % methods (Access = private)
-function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star, x0, hybrid_mode)
+function [optimization_problem] = GetOptimizationProblem(obj, t0, x_s_star, u_star, x_s_0, hybrid_mode)
     number_of_steps = length(hybrid_mode); % Number of hybrid states in the hybrid_mode, it corresponds to the number of steps of the MPC problem
+    [x_c_0, ~] = obj.simulator2controller(x_s_0);
     t = t0:obj.h_opt:(t0 + obj.h_opt * (number_of_steps - 1));
     u_lb = zeros(length(obj.u_lower_bound), number_of_steps);
     u_ub = zeros(length(obj.u_upper_bound), number_of_steps);
     for i = 1: number_of_steps
-        [~, u_c] = obj.hybrid_states_map(1).Simulator2Controller(x_star(t(i)), u_star(t(i)));
+        [~, u_c] = obj.simulator2controller(x_s_star(t(i)), u_star(t(i)));
         u_lb(:,i) = -u_c - obj.u_lower_bound;
         u_ub(:,i) = -u_c + obj.u_upper_bound;
     end
@@ -101,10 +101,10 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
     
     H = zeros(optimization_problem.nv, optimization_problem.nv);
     for step_index = 1:number_of_steps
-        [x_c, u_c] = obj.hybrid_states_map(1).Simulator2Controller(x_star(t(step_index)), u_star(t(step_index)));
+        [x_c, u_c] = obj.simulator2controller(x_s_star(t(step_index)), u_star(t(step_index)));
         hybrid_state_index = hybrid_mode(step_index);
         hybrid_state = obj.hybrid_states_map(hybrid_state_index); % Todo change if it slows everything down
-        [optimization_problem, H, Ai, bi, Ae, be] = hybrid_state.buildConstraints(optimization_problem, step_index, x0, x_c, u_c, number_of_steps, obj.h_opt, obj.Q_MPC, obj.R_MPC, H);
+        [optimization_problem, H, Ai, bi, Ae, be] = hybrid_state.buildConstraints(optimization_problem, step_index, x_c_0, x_c, u_c, number_of_steps, obj.h_opt, obj.Q_MPC, obj.R_MPC, H);
         optimization_problem = optimization_problem.addLinearConstraints(Ai, bi, Ae, be);
     end
     optimization_problem = optimization_problem.addCost(H, [], []);

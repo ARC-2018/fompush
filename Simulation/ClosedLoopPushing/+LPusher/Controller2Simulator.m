@@ -2,18 +2,19 @@ function [xs, us] = Controller2Simulator(xc, uc)
 %CONTROLLER2SIMULATOR Summary of this function goes here
 %   Variables
     friction = LPusher.Friction;
-    ribi = xc(1:2);
-    theta = xc(3);
-    ry = xc(4);
     %Direction cosine matrices
-    Cbi = Helper.C3_2d(theta);
+    Cbi = Helper.C3_2d(xc(3));
     %Convert state to body frame
-    rbbi = Cbi * ribi;
-    rbpb = [-LPusher.LPusherSlider.a / 2;ry];
+    rbbi = Cbi * xc(1:2);
+    rbpb = [-LPusher.LPusherSlider.a / 2;xc(4)];
     ripb = Cbi'*rbpb;
-    ripi = ribi+ripb;
+    ripi = xc(1:2)+ripb;
     %Forces
-    xs = [ribi;theta;ripi;theta];
+    xs = [1 0 0 0 0;
+          0 1 0 0 0;
+          0 0 1 0 0;
+          ]
+    xs = [xc(1:3);ripi;xc(3)];
     if nargin > 1
         fn = uc(1:2);
         ft = uc(3:4);
