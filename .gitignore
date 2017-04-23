@@ -36,6 +36,14 @@ Simulation/ClosedLoopPushing/SimulationResults/
 Simulation/ClosedLoopPushing/Results/
 Simulation/ClosedLoopPushing/.RData
 Simulation/ClosedLoopPushing/.Rhistory
+Simulation/ClosedLoopPushing/Test/
+Simulation/ClosedLoopPushing/animator_frank.mat
+Simulation/ClosedLoopPushing/animator_me.mat
+Simulation/ClosedLoopPushing/matlab.mat
+Simulation/ClosedLoopPushing/op_frank.mat
+Simulation/ClosedLoopPushing/op_mine.mat
+Simulation/ClosedLoopPushing/uc_mine.mat
+rstudio-1.0.44-amd64.deb
 
 # Catkin ignore
 catkin_ws/build
