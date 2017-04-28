@@ -23,11 +23,11 @@ fom_steps = 5;
 % ext_fom_steps = 35;
 % diff_fom_steps = ext_fom_steps - fom_steps;
 hybrid_modes = VariationWithRepetition(length(hybrid_states_map), fom_steps);
-% hybrid_modes = [hybrid_modes ones(size(hybrid_modes, 1), diff_fom_steps)];
+% hybrid_modes = [hybrid_modes, ones(size(hybrid_modes, 1), diff_fom_steps)];
 %% MPC Parameters and Setup
-Q_MPC = 10 * diag([1,1,.1,0]); % 10 * diag([1,10,10,0]);
-Q_MPC_final = 200 * diag([1,1,.1,0]); % 200 * diag([.1,10,1,0]);
-R_MPC = .5 * diag([1,1]);
+Q_MPC = 1 * diag([1,1,.1,0]); % 10 * diag([1,10,10,0]);
+Q_MPC_final = 100 * diag([1,1,.1,0]); % 200 * diag([.1,10,1,0]);
+R_MPC = 0.5 * diag([1,1]);
 u_lower_bound = [-0.01; 0.1];
 u_upper_bound = [0.1; 0.1];
 x_lower_bound = [1; 1; 20; QSPusherSlider.a];
@@ -49,9 +49,9 @@ x_star_circle = @(d)(@(t)([-(sin(-(d*A(d)).*t) * (c^2 + px^2) + cos(-(d*A(d)) .*
 
 number_of_curvature_pairs = 10;
 d = linspace(-3 * QSPusherSlider.b/4.0, 3 * QSPusherSlider.b/4.0, 2 * number_of_curvature_pairs);
-eps = 0.5; % TODO: Automatically generate it
-angular_eps = pi / 4; % 45% in each direction. Otherwise we choose another side
-sim_number = 1000; % Number of simulations
+eps = 0.15; % TODO: Automatically generate it
+angular_eps = pi / 2; % 90% in each direction. Otherwise we choose another side
+sim_number = 50; % Number of simulations
 n_rand = @(n, m, eps)((rand(n, m) - 0.5) * eps);
 x0 = [n_rand(sim_number, 2, 2 * eps), n_rand(sim_number, 1, 2 * angular_eps), n_rand(sim_number, 1, QSPusherSlider.a)].';
 path_name = 'SimulationResults/GeneralTrajectoryLearning';
@@ -63,7 +63,8 @@ normalize_matrix = @(A)((A - nanmean(A, 2) * ones(1, size(A, 2))) ./ (nanstd(A, 
 % number_of_modes = 20;
 best_modes = cell(1, 2 * number_of_curvature_pairs + 1);
 best_costs = cell(1, 2 * number_of_curvature_pairs + 1);
-for k = 0:2 * number_of_curvature_pairs
+% for k = 0:2 * number_of_curvature_pairs
+for k = 14
     disp(k)
     if k == 0
         x_star = x_star_line;

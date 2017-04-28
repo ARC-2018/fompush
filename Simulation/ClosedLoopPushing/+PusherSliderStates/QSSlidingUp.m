@@ -64,12 +64,12 @@ methods
         F = obj.F(u(1), u(2), x(3), x(4));
     end
     
-    function [B, F, D, g] = GetInitialStateMatrices(obj, x0, x_star, u)
-        B = obj.B(x0(3), x0(4));
-        F = B * u - obj.F(u(1), u(2), x_star(3), x_star(4));
-        D = obj.D(x0(4));
-        g = obj.g(u(1), u(2), x0(4));
+    function [B_state, D, g] = GetInitialStateMatrices(obj, x_0_state, u_0_star)
+        B_state = obj.B(x_0_state(3), x_0_state(4));
+        D = obj.D(x_0_state(4));
+        g = obj.g(u_0_star(1), u_0_star(2), x_0_state(4));
     end
+    
     function is_inside = CheckConstraints(obj, x, u)
         gamma = u(2) / u(1);
         gamma_top_subs = obj.gamma_top_simplified(x(4));

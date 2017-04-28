@@ -40,7 +40,7 @@ function [f_values] = GetDataFirstStep(obj, current_t, u_star, current_x)
     end
 end
 
-function [u_state, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star, u_star, current_x)
+function [u_state, mode_index, min_cost, obj, chosen_x, considered_x] = SolveMPC(obj, current_t, x_star, u_star, current_x_state)
     options = optimoptions('quadprog','Display','none'); %TODO: Never used
     current_hybrid_modes = obj.hybrid_modes;
     if obj.has_chameleon
@@ -48,20 +48,25 @@ function [u_state, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star,
     end
     number_of_modes = size(current_hybrid_modes, 1);
     out_u_bar = cell(1, number_of_modes);
-%     out_x_bar = cell(1, number_of_modes);
+    considered_x = cell(1, number_of_modes);
     f_values = Inf * ones(1, number_of_modes);
+    t = current_t:obj.h_opt:(current_t + obj.h_opt * length(current_hybrid_modes(1, :)));
     for hybrid_mode_index = 1:number_of_modes
         hybrid_mode = current_hybrid_modes(hybrid_mode_index, :);
-        optimization_problem = obj.GetOptimizationProblem(current_t, x_star, u_star, current_x, hybrid_mode);
+        optimization_problem = obj.GetOptimizationProblem(current_t, x_star, u_star, current_x_state, hybrid_mode);
         try
             [solved_optimization_problem, solvertime, f_values(hybrid_mode_index)] = optimization_problem.solve;
             out_u_bar{hybrid_mode_index} = solved_optimization_problem.vars.u.value;
+            considered_x{hybrid_mode_index} = [current_x_state, solved_optimization_problem.vars.x.value + x_star(t(2:end))];
         catch
             f_values(hybrid_mode_index) = Inf; % Disregard this solution
             fprintf('Opt. number %d not feasible\n', hybrid_mode_index);
         end
     end
     [min_cost, mode_index] = min(f_values);
+%     x_values = problems{mode_index}.vars.x.value
+%     u_values = problems{mode_index}.vars.u.value
+%     f_values
     try
         u_bar = out_u_bar{mode_index}(1:obj.number_of_controllers, 1);
     catch
@@ -69,20 +74,23 @@ function [u_state, mode_index, min_cost, obj] = SolveMPC(obj, current_t, x_star,
     end
     disp([sprintf('Mode %d. First state: ', mode_index), obj.hybrid_states_map(current_hybrid_modes(mode_index, 1)).name]);
     u_state = u_bar + u_star(current_t);
+    chosen_x = considered_x{mode_index};
     if obj.has_chameleon
-        obj.chameleon_mode = [current_hybrid_modes(mode_index, 2:end), current_hybrid_modes(mode_index, 1)];
+        obj.chameleon_mode = [current_hybrid_modes(mode_index, 2:end), 1];
     end
 end
 end
 methods
 % methods (Access = private)
-function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star, x0, hybrid_mode)
+function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star, x_0_state, hybrid_mode)
     number_of_steps = length(hybrid_mode); % Number of hybrid states in the hybrid_mode, it corresponds to the number of steps of the MPC problem
     t = t0:obj.h_opt:(t0 + obj.h_opt * (number_of_steps - 1));
     u_lb = -u_star(t) - obj.u_lower_bound * ones(1, number_of_steps);
     u_ub = -u_star(t) + obj.u_upper_bound * ones(1, number_of_steps);
-    x_lb = - obj.x_lower_bound * ones(1, number_of_steps);
-    x_ub = obj.x_upper_bound * ones(1, number_of_steps);
+    x_lb = [0;0;0;1] * ones(1, number_of_steps) .* -x_star(t) - obj.x_lower_bound * ones(1, number_of_steps);
+    x_ub = [0;0;0;1] * ones(1, number_of_steps) .* -x_star(t) + obj.x_upper_bound * ones(1, number_of_steps);
+%     x_lb = -[100;100;100;100] * ones(1, number_of_steps);
+%     x_ub = [100;100;100;100] * ones(1, number_of_steps);
     optimization_problem = MixedIntegerConvexProgram(false); % Define optimization program
     % The arguments for the function are (name, type_, size_, lower_bound, upper_bound, start_value)
     optimization_problem = optimization_problem.addVariable('x', 'C', [obj.number_of_variables, number_of_steps], x_lb, x_ub);
@@ -100,18 +108,11 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
         % TODO: Should add constraint to bound the first value to it's
         % real value?
         if step_index == 1
-            delta_x0 = x0 - x_star(t(1));
-            [B, F, D, g] = hybrid_state.GetInitialStateMatrices(x0, x_star(t(1)), u_star(t(1)));
+            delta_x0 = x_0_state - x_star(t(1));
+            [B, D, g] = hybrid_state.GetInitialStateMatrices(x_0_state, u_star(t(1)));
             %% Add nonlinear dynamic constraint
-            F_bar = delta_x0 + obj.h_opt * F;
-            B_bar = obj.h_opt * B;
-            assert(size(B_bar, 1) == obj.number_of_variables, 'B_bar row number: %d and number of variables: %d mismatch', size(B_bar, 1), obj.number_of_variables);
-            assert(size(B_bar, 2) == obj.number_of_controllers, 'B_bar column number: %d and number of controllers: %d mismatch', size(B_bar, 2), obj.number_of_controllers);
-            assert(size(D, 1) == size(g, 1), 'D row number: %d, and g row number: %d mismatch', size(D, 1), size(g, 1));
-            assert(size(D, 2) == size(B_bar, 2), 'D column number: %d, and B_bar column number: %d mismatch', size(D, 2), size(B_bar, 2));
-            %Add constraint (Modify existing dummy constraint)
-            A_motion(:,optimization_problem.vars.u.i(1:obj.number_of_controllers, 1)) = -B_bar;
-            b_motion = F_bar;
+            A_motion(:,optimization_problem.vars.u.i(1:obj.number_of_controllers, 1)) = -obj.h_opt * B;
+            b_motion = obj.h_opt * B * u_star(t(1)) + delta_x0 + x_star(t(1)) - x_star(t(2));
             number_of_motion_cone_constraints = size(D,1);
             A_constraint = zeros(number_of_motion_cone_constraints, optimization_problem.nv);
         else
@@ -136,7 +137,8 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
         end
         %Final Cost
         if step_index == number_of_steps
-            H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = 10 * dare(A, B, obj.Q_MPC, obj.R_MPC);
+%             H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = 10 * dare(A, B, obj.Q_MPC, obj.R_MPC);
+            H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = obj.Q_MPC_final;
         end
         optimization_problem = optimization_problem.addCost(H, [], []);
         A_constraint(:, optimization_problem.vars.u.i(1:obj.number_of_controllers, step_index)) = D;

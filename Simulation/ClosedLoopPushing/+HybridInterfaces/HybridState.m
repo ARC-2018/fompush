@@ -31,7 +31,7 @@ methods (Abstract)
     [E, D, g] = SetLinearConstraints(obj);
     [A, B, D, E, g] = GetLinearMatrices(obj, x_state, u_state);
     [F] = GetMotionFunction(obj, x_state, u_state);
-    [B, F, D, g] = GetInitialStateMatrices(obj, x_state0, x_star0, u_star0);
+    [B, D, g] = GetInitialStateMatrices(obj, x_state0, u_star0);
     % Checks whether the state constraints are fulfilled
     is_inside = CheckConstraints(obj, x_state, u_state);
 end
