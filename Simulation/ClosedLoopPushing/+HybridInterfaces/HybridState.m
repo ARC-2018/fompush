@@ -29,7 +29,7 @@ methods
 end
 methods (Abstract)
     [E, D, g] = SetLinearConstraints(obj);
-    [A, B, D, E, g] = GetLinearMatrices(obj, x_state, u_state);
+    [A, B, F, D, E, g] = GetLinearMatrices(obj, x_state, u_state);
     [F] = GetMotionFunction(obj, x_state, u_state);
     [B, D, g] = GetInitialStateMatrices(obj, x_state0, u_star0);
     % Checks whether the state constraints are fulfilled

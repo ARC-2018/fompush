@@ -62,9 +62,10 @@ methods
 %              u_star(2) - gamma_bottom_star * u_star(1)];
 %     end
     
-    function [A, B, D, E, g] = GetLinearMatrices(obj, x, u) % x = [x, y, theta, ry] u = [v_n, v_t]
+    function [A, B, F, D, E, g] = GetLinearMatrices(obj, x, u) % x = [x, y, theta, ry] u = [v_n, v_t]
         A = obj.A(u(1), u(2), x(3), x(4));
         B = obj.B(x(3), x(4));
+        F = obj.F(u(1), u(2), x(3), x(4));
         E = obj.E(u(1), x(4));
         D = obj.D(x(4));
         g = obj.g(u(1), u(2), x(4));

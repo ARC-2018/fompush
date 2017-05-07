@@ -36,10 +36,12 @@ methods (Static)
 function [x_slider, y_slider, x_pusher, y_pusher] = GetPusherSliderPolygons(x_state)
     %Declare variables
     d = x_state(4);
+    theta = x_state(3);
     %Find distance d
     Rbi = Helper.C3_2d(x_state(3));
     ribi = x_state(1:2);
-    rbpb = [-Models.QSPusherSlider.a/2; d];
+    R = 0.0045; % Radius of the Pusher Circle
+    rbpb = [-(Models.QSPusherSlider.a/2 + R); d];
     ripb = Rbi.' * rbpb;
     ripi = ripb + ribi;
     %% Vertices of Slider Polygon
@@ -54,9 +56,8 @@ function [x_slider, y_slider, x_pusher, y_pusher] = GetPusherSliderPolygons(x_st
     %% Points of Pusher Circle
     numPoints = 100; %Number of points making up the circle
     theta_vec = linspace(0, 2 * pi, numPoints);
-    R = 0.0045; % Radius of the Pusher Circle
-    x_pusher = R * cos(theta_vec) + pusher_center(1) - R;
-    y_pusher = R * sin(theta_vec) + pusher_center(2);
+    x_pusher = pusher_center(1) + R * cos(theta_vec);
+    y_pusher = pusher_center(2) + R * sin(theta_vec);
 end
 
 function [x_lb, x_up, y_lb, y_ub] = GetPlotLimits(x_trajectory)

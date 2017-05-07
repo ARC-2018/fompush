@@ -52,9 +52,10 @@ methods
         obj.g = matlabFunction([obj.u(2) - obj.gamma_top * obj.u(1) - obj.epsilon]);
     end
     
-    function [A, B, D, E, g] = GetLinearMatrices(obj, x, u)
+    function [A, B, F, D, E, g] = GetLinearMatrices(obj, x, u)
         A = obj.A(u(1), x(3), x(4));
         B = obj.B(x(3), x(4));
+        F = obj.F(u(1), u(2), x(3), x(4));
         E = obj.E(u(1), x(4));
         D = obj.D(x(4));
         g = obj.g(u(1), u(2), x(4));

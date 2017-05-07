@@ -36,8 +36,6 @@ h_opt = 0.03;
 clustering_factor = 5;
 solvers{1, 1} = FOMSolver(hybrid_states_map, Q_MPC, Q_MPC_final, R_MPC, u_lower_bound, u_upper_bound, x_lower_bound, x_upper_bound, h_opt, hybrid_modes, 0); % FOM without chameleon
 solvers{1, 2} = FOMSolver(hybrid_states_map, Q_MPC, Q_MPC_final, R_MPC, u_lower_bound, u_upper_bound, x_lower_bound, x_upper_bound, h_opt, hybrid_modes, 1); % FOM with chameleon
-solvers{1, 3} = MIQPSolver(hybrid_states_map, Q_MPC, Q_MPC_final, R_MPC, u_lower_bound, u_upper_bound, x_lower_bound, x_upper_bound, h_opt, miqp_steps, 1); % MIQP
-solvers{1, 4} = MIQPSolver(hybrid_states_map, Q_MPC, Q_MPC_final, R_MPC, u_lower_bound, u_upper_bound, x_lower_bound, x_upper_bound, h_opt, miqp_steps * clustering_factor, clustering_factor); % MIQP with clustering
 %% Euler Integration Parameters and Setup
 h_step = 0.01;
 euler_integrator = EulerIntegration(real_states_map, h_step);

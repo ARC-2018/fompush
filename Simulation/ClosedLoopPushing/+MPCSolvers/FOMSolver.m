@@ -89,9 +89,11 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
     u_ub = -u_star(t) + obj.u_upper_bound * ones(1, number_of_steps);
     x_lb = [0;0;0;1] * ones(1, number_of_steps) .* -x_star(t) - obj.x_lower_bound * ones(1, number_of_steps);
     x_ub = [0;0;0;1] * ones(1, number_of_steps) .* -x_star(t) + obj.x_upper_bound * ones(1, number_of_steps);
+    x_s = x_star(t);
 %     x_lb = -[100;100;100;100] * ones(1, number_of_steps);
 %     x_ub = [100;100;100;100] * ones(1, number_of_steps);
-    optimization_problem = MixedIntegerConvexProgram(false); % Define optimization program
+    optimization_problem = MixedIntegerConvexProgram(false);
+    t = [t, t0 + obj.h_opt * number_of_steps]; % Define optimization program
     % The arguments for the function are (name, type_, size_, lower_bound, upper_bound, start_value)
     optimization_problem = optimization_problem.addVariable('x', 'C', [obj.number_of_variables, number_of_steps], x_lb, x_ub);
     optimization_problem = optimization_problem.addVariable('u', 'C', [obj.number_of_controllers, number_of_steps], u_lb, u_ub);
@@ -113,32 +115,27 @@ function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star
             %% Add nonlinear dynamic constraint
             A_motion(:,optimization_problem.vars.u.i(1:obj.number_of_controllers, 1)) = -obj.h_opt * B;
             b_motion = obj.h_opt * B * u_star(t(1)) + delta_x0 + x_star(t(1)) - x_star(t(2));
+%             [~, ~, F_star, ~, ~, ~] = hybrid_state.GetLinearMatrices(x_star(t(1)), u_star(t(1)));
+%             b_motion = obj.h_opt * B * u_star(t(1)) -obj.h_opt * F_star + delta_x0;
             number_of_motion_cone_constraints = size(D,1);
             A_constraint = zeros(number_of_motion_cone_constraints, optimization_problem.nv);
         else
-            [A, B, D, E, g] = hybrid_state.GetLinearMatrices(x_star(t(step_index)), u_star(t(step_index)));
+            [A, B, F, D, E, g] = hybrid_state.GetLinearMatrices(x_star(t(step_index)), u_star(t(step_index)));
             %% Dynamic Constraints
             A_bar = eye(size(A)) + obj.h_opt * A;
             B_bar = obj.h_opt * B;
-            assert(size(A_bar, 1) == size(B_bar, 1), 'A_bar row number: %d and B_bar row number: %d mismatch', size(A_bar, 1), size(B_bar, 1));
-            assert(size(A_bar, 1) == size(A_bar, 2), 'A_bar row number: %d and A_bar column number: %d mismatch', size(A_bar, 1), size(A_bar, 2));
-            assert(size(A_bar, 1) == obj.number_of_variables, 'A_bar row number: %d and number of variables: %d mismatch', size(A_bar, 1), obj.number_of_variables);
-            assert(size(B_bar, 2) == obj.number_of_controllers, 'B_bar column number: %d and number of controllers: %d mismatch', size(B_bar, 2), obj.number_of_controllers);
-            assert(size(E, 1) == size(D, 1), 'E row number: %d, and D row number: %d mismatch', size(E, 1), size(D, 1));
-            assert(size(D, 1) == size(g, 1), 'D row number: %d, and g row number: %d mismatch', size(D, 1), size(g, 1));
-            assert(size(E, 2) == size(A_bar, 2), 'E column number: %d, and A_bar column number: %d mismatch', size(E, 2), size(A_bar, 2));
-            assert(size(D, 2) == size(B_bar, 2), 'D column number: %d, and B_bar column number: %d mismatch', size(D, 2), size(B_bar, 2));
             A_motion(:,optimization_problem.vars.x.i(1:obj.number_of_variables, step_index-1)) = -A_bar;
             A_motion(:,optimization_problem.vars.u.i(1:obj.number_of_controllers, step_index)) = -B_bar;
-            b_motion = zeros(size(A_motion, 1),1);
+            b_motion = x_star(t(step_index)) - x_star(t(step_index + 1)) + obj.h_opt * F;
+%             b_motion = zeros(size(A_motion, 1),1);
             number_of_motion_cone_constraints = size(D,1);
             A_constraint = zeros(number_of_motion_cone_constraints, optimization_problem.nv);
             A_constraint(:, optimization_problem.vars.x.i(1:obj.number_of_variables, step_index)) = E;
         end
         %Final Cost
         if step_index == number_of_steps
-%             H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = 10 * dare(A, B, obj.Q_MPC, obj.R_MPC);
-            H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = obj.Q_MPC_final;
+            H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = 10 * dare(A, B, obj.Q_MPC, obj.R_MPC);
+%             H(optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index), optimization_problem.vars.x.i(1:length(obj.Q_MPC_final), step_index)) = obj.Q_MPC_final;
         end
         optimization_problem = optimization_problem.addCost(H, [], []);
         A_constraint(:, optimization_problem.vars.u.i(1:obj.number_of_controllers, step_index)) = D;
