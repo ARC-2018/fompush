@@ -43,25 +43,12 @@ methods
         obj.C_bottom = jacobian(obj.gamma_bottom, obj.x);
         obj = obj.SetLinearMatrices();
     end
-    
-    
     function obj = SetLinearConstraints(obj)
         obj.E = matlabFunction(obj.u(1) * [-obj.C_top; obj.C_bottom]);
         obj.D = matlabFunction([-obj.gamma_top 1; obj.gamma_bottom -1]);
         obj.g = matlabFunction([-obj.u(2) + obj.gamma_top * obj.u(1);
                                  obj.u(2) - obj.gamma_bottom * obj.u(1)]);
     end
-%     function [E, D, g] = GetLinearConstraints(obj, x_star, u_star)
-%         C_top_subs = double(subs(obj.C_top, obj.x(4), x_star(4)));
-%         C_bottom_subs = double(subs(obj.C_bottom, obj.x(4), x_star(4)));
-%         gamma_top_star = double(subs(obj.gamma_top, obj.x(4), x_star(4)));
-%         gamma_bottom_star = double(subs(obj.gamma_bottom, obj.x(4), x_star(4)));
-%         E = u_star(1) * [-C_top_subs; C_bottom_subs];
-%         D = [-gamma_top_star 1; gamma_bottom_star -1];
-%         g = [-u_star(2) + gamma_top_star * u_star(1);
-%              u_star(2) - gamma_bottom_star * u_star(1)];
-%     end
-    
     function [A, B, F, D, E, g] = GetLinearMatrices(obj, x, u) % x = [x, y, theta, ry] u = [v_n, v_t]
         A = obj.A(u(1), u(2), x(3), x(4));
         B = obj.B(x(3), x(4));
@@ -70,7 +57,6 @@ methods
         D = obj.D(x(4));
         g = obj.g(u(1), u(2), x(4));
     end
-    
     function [F] = GetMotionFunction(obj, x, u)
         F = obj.F(u(1), u(2), x(3), x(4));
     end
