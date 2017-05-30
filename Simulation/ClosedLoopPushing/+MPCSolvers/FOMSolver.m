@@ -83,7 +83,7 @@ end
 methods
 % methods (Access = private)
 function [optimization_problem] = GetOptimizationProblem(obj, t0, x_star, u_star, x_0_state, hybrid_mode)
-    number_of_steps = length(hybrid_mode); % Number of hybrid states in the hybrid_mode, it corresponds to the number of steps of the MPC problem
+    number_of_steps = length(hybrid_mode); % Number of hybrid statesAin_force in the hybrid_mode, it corresponds to the number of steps of the MPC problem
     t = t0:obj.h_opt:(t0 + obj.h_opt * (number_of_steps - 1));
     u_lb = -u_star(t) - obj.u_lower_bound * ones(1, number_of_steps);
     u_ub = -u_star(t) + obj.u_upper_bound * ones(1, number_of_steps);

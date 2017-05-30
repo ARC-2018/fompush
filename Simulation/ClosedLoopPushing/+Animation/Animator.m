@@ -22,7 +22,7 @@ function [myMovie] = AnimateTrajectory(obj, frame_rate, file_name, objective_tra
     
 %     frame1 = getframe(animation)
     if record == 1
-        acc_factor = 50;
+        acc_factor = 1;
         speed_up = 1;
         %Create movie file
     else
@@ -60,7 +60,8 @@ function [myMovie] = AnimateTrajectory(obj, frame_rate, file_name, objective_tra
             MovingFiniteHorizon = cell(length(fh_considered_x{1}) + 1,1);
             for i = 1:length(fh_considered_x{iteration})
                 if length(fh_considered_x{iteration}{i}) > 0
-                    MovingFiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,:), fh_considered_x{iteration}{i}(2,:), 'Color', [0,0,0]);
+%                     MovingFiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,:), fh_considered_x{iteration}{i}(2,:), 'Color', [0,0,0]);
+                    MovingFiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,1:3), fh_considered_x{iteration}{i}(2,1:3), 'Color', [0,0,0]);
                 end
             end
             MovingFiniteHorizon{end} = plot(zeros(36, 1), zeros(36, 1), 'Color', [0,0,0,0.1]);
@@ -80,12 +81,16 @@ function [myMovie] = AnimateTrajectory(obj, frame_rate, file_name, objective_tra
             
             for i = 1:length(fh_considered_x{iteration})
                 if length(fh_considered_x{iteration}{i}) > 0
-                    MovingFiniteHorizon{i}.XData = fh_considered_x{iteration}{i}(1,:);
-                    MovingFiniteHorizon{i}.YData = fh_considered_x{iteration}{i}(2,:);
+%                     MovingFiniteHorizon{i}.XData = fh_considered_x{iteration}{i}(1,:);
+%                     MovingFiniteHorizon{i}.YData = fh_considered_x{iteration}{i}(2,:);
+                    MovingFiniteHorizon{i}.XData = fh_considered_x{iteration}{i}(1,1:3);
+                    MovingFiniteHorizon{i}.YData = fh_considered_x{iteration}{i}(2,1:3);
                 end
             end
-            MovingChosenHorizon.XData = f_horizon_x_state{iteration}(1,:);
-            MovingChosenHorizon.YData = f_horizon_x_state{iteration}(2,:);
+%             MovingChosenHorizon.XData = f_horizon_x_state{iteration}(1,:);
+%             MovingChosenHorizon.YData = f_horizon_x_state{iteration}(2,:);
+            MovingChosenHorizon.XData = f_horizon_x_state{iteration}(1,1:3);
+            MovingChosenHorizon.YData = f_horizon_x_state{iteration}(2,1:3);
             slider_line_width = 0.1;
             alpha = .4;
         end
@@ -93,10 +98,12 @@ function [myMovie] = AnimateTrajectory(obj, frame_rate, file_name, objective_tra
             FiniteHorizon = cell(length(fh_considered_x{1}) + 1,1);
             for i = 1:length(fh_considered_x{iteration})
                 if length(fh_considered_x{iteration}{i}) > 0
-                    FiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,:), fh_considered_x{iteration}{i}(2,:), 'Color', [0,0,0]);
+%                     FiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,:), fh_considered_x{iteration}{i}(2,:), 'Color', [0,0,0]);
+                    FiniteHorizon{i} = plot(fh_considered_x{iteration}{i}(1,1:3), fh_considered_x{iteration}{i}(2,1:3), 'Color', [0,0,0]);
                 end
             end
-            ChozenHorizon = plot(f_horizon_x_state{iteration}(1,:), f_horizon_x_state{iteration}(2,:), 'Color', [1,1,0], 'LineWidth', 2);
+%             ChozenHorizon = plot(f_horizon_x_state{iteration}(1,:), f_horizon_x_state{iteration}(2,:), 'Color', [1,1,0], 'LineWidth', 2);
+            ChozenHorizon = plot(f_horizon_x_state{iteration}(1,1:3), f_horizon_x_state{iteration}(2,1:3), 'Color', [1,1,0], 'LineWidth', 2);
         end
         SimulatedSlider = patch(sim_x_s, sim_y_s, 'red', 'EdgeAlpha', .4, 'FaceAlpha', .4, 'EdgeColor', 'b', 'FaceColor', 'NONE', 'LineWidth', 0.1);
         SimulatedPusher = patch(sim_x_p, sim_y_p, 'red', 'EdgeAlpha', .4, 'FaceAlpha', .4, 'EdgeColor', [0,0,1] * 0.3, 'FaceColor', [1,0,0] * 0.5, 'LineWidth', 0.1);
