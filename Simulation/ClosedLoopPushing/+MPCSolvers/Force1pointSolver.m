@@ -45,27 +45,37 @@ function [uc, us, min_cost, obj, chosen_xc, considered_xc] = SolveMPC(obj, curre
     options = optimoptions('quadprog','Display','none'); %TODO: Never used
     current_hybrid_modes = obj.hybrid_modes;
     current_hybrid_modes = [current_hybrid_modes; obj.chameleon_mode];
-    number_of_modes = size(current_hybrid_modes, 1);
-    out_uc_bar = cell(1, number_of_modes);
-    considered_xc = cell(1, number_of_modes);
-    f_values = Inf * ones(1, number_of_modes);
+    num_modes = size(current_hybrid_modes, 1);
+    out_uc_bar = cell(1, num_modes);
+    considered_xc = cell(1, num_modes);
+    op = cell(1, num_modes);
+    frank_op = cell(1, num_modes);
+    f_values = Inf * ones(1, num_modes);
     t = current_t:obj.h_opt:(current_t + obj.h_opt * length(current_hybrid_modes(1, :)));
-    for hybrid_mode_index = 1:number_of_modes
-        hybrid_mode = current_hybrid_modes(hybrid_mode_index, :);
-        op = obj.GetOptimizationProblem(current_t, xns, uns, current_xs, hybrid_mode);
+    current_xc = obj.lp_functions.coordinateTransformSC(current_xs);
+    delta_xc = current_xc - obj.getXC(xns, t(1));
+    A_nom = obj.A_fun(obj.xc_eq, obj.uc_eq);
+    A_bar = eye(4)+obj.h*A_nom;
+    for mode_index = 1:num_modes
+        hybrid_mode = current_hybrid_modes(mode_index, :);
+        op{mode_index} = obj.GetOptimizationProblem(current_t, xns, uns, current_xs, hybrid_mode);
         try
-            [solved_optimization_problem, solvertime, f_values(hybrid_mode_index)] = op.solve;
-            out_uc_bar{hybrid_mode_index} = solved_optimization_problem.vars.u.value;
-            considered_xc{hybrid_mode_index} = [obj.lp_functions.coordinateTransformSC(current_xs), solved_optimization_problem.vars.x.value + obj.GetXC(xns, t(2:end))];
+            [op{mode_index}, solvertime, f_values(mode_index)] = op{mode_index}.solve;
+            out_uc_bar{mode_index} = op{mode_index}.vars.u.value;
+            considered_xc{mode_index} = [current_xc, op{mode_index}.vars.x.value + obj.GetXC(xns, t(2:end))];
+            obj.lp_functions.Opt{mode_index}.beq(1:4) = zeros(4,1);
+            obj.lp_functions.Opt{mode_index}.beq(1:4) = A_bar * delta_xc;
+            % Solve Opt Program   
+            [obj.lp_functions.Opt{mode_index}, ~, ~] = obj.lp_functions.Opt{mode_index}.solve;
         catch ME
             display(ME.identifier);
-            f_values(hybrid_mode_index) = Inf; % Disregard this solution
-            fprintf('Opt. number %d not feasible\n', hybrid_mode_index);
+            f_values(mode_index) = Inf; % Disregard this solution
+            fprintf('Opt. number %d not feasible\n', mode_index);
         end
     end
     [min_cost, mode_index] = min(f_values);
     uc_bar = out_uc_bar{mode_index}(1:obj.number_of_controllers, 1);
-    disp(sprintf('Mode %d. First state: ', mode_index));
+    disp(fprintf('Mode %d.\n', mode_index));
     chosen_xc = considered_xc{mode_index};
     [~, unc] = obj.lp_functions.fullTransformSC(ppval(xns, current_t), ppval(uns, current_t));
     uc = uc_bar + unc;
